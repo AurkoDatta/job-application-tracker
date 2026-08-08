@@ -29,11 +29,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final ColumnService columnService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtUtil jwtUtil,
+            ColumnService columnService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.columnService = columnService;
     }
 
     /**
@@ -69,6 +76,10 @@ public class AuthService {
             // 500 from a raw Mongo duplicate-key error.
             throw new DuplicateEmailException("An account with this email already exists");
         }
+
+        // Every new account starts with the standard 5-column board; only
+        // happens here at registration, never on login.
+        columnService.seedDefaultColumns(saved.getId());
 
         String token = jwtUtil.generate(saved.getEmail());
         return new AuthResult(token, toAuthResponse(saved));
