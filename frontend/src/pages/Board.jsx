@@ -1,16 +1,15 @@
+import KanbanBoard from '../components/board/KanbanBoard.jsx'
+
 /**
- * Board page placeholder. Task 8 builds out the Kanban board (drag-and-drop
- * columns/cards); this just confirms the route renders.
+ * Board page: thin shell around `KanbanBoard`. Loading/error states for
+ * columns and applications live inside `KanbanBoard` itself (it owns
+ * `useColumns`/`useApplications`) rather than being duplicated here — see
+ * `KanbanBoard.jsx`'s top-level comment for why.
  */
 function Board() {
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="font-mono text-2xl font-semibold uppercase tracking-widest text-stamp">
-          Board
-        </h1>
-        <p className="mt-2 text-sm text-slate">Placeholder page — Task 8 builds this out.</p>
-      </div>
+    <main className="min-h-screen px-6 py-6">
+      <KanbanBoard />
     </main>
   )
 }
