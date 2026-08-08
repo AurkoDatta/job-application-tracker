@@ -40,6 +40,13 @@ export default [
       ],
       // New JSX transform (React 17+) doesn't require React in scope.
       'react/react-in-jsx-scope': 'off',
+      // Project conventions document component props via JSDoc (see
+      // CLAUDE.md's Code Commenting Standards), not the separate
+      // `prop-types` runtime-validation package — no such dependency is
+      // installed, so this rule would otherwise flag every component that
+      // takes props (e.g. AuthProvider's `children`) without a realistic
+      // fix.
+      'react/prop-types': 'off',
     },
   },
 ]

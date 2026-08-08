@@ -105,7 +105,17 @@ public class AuthService {
         return new AuthResult(token, toAuthResponse(user));
     }
 
-    private AuthResponse toAuthResponse(User user) {
+    /**
+     * Maps a persisted {@link User} to the public {@link AuthResponse} DTO
+     * shared by register/login/{@code /me} — never exposes the password
+     * hash. Public (not private) so {@code AuthController} can reuse it for
+     * {@code GET /api/auth/me}, which returns the same shape for an
+     * already-authenticated session without issuing a new token.
+     *
+     * @param user the persisted user document
+     * @return the public-facing DTO for {@code user}
+     */
+    public AuthResponse toAuthResponse(User user) {
         return new AuthResponse(user.getId(), user.getName(), user.getEmail());
     }
 

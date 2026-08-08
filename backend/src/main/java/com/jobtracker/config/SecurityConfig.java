@@ -58,6 +58,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // More specific matcher must precede the broader
+                        // "/api/auth/**" permitAll() below — Spring Security
+                        // evaluates authorizeHttpRequests rules in
+                        // declaration order and uses the first match, so
+                        // "/api/auth/me" would silently inherit permitAll()
+                        // (defeating the point of the endpoint) if it were
+                        // declared after the wildcard instead of before it.
+                        .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()

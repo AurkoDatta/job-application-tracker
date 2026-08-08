@@ -7,6 +7,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.jobtracker.dto.auth.AuthResponse;
 import com.jobtracker.dto.auth.LoginRequest;
 import com.jobtracker.dto.auth.RegisterRequest;
+import com.jobtracker.security.CustomUserDetails;
 import com.jobtracker.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -80,6 +83,23 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
                 .build();
+    }
+
+    /**
+     * Returns the currently authenticated user, letting the frontend answer
+     * "is there already a valid session?" on page load/refresh. The JWT
+     * lives in an httpOnly cookie the frontend JS can never read directly,
+     * so this endpoint (guarded as {@code authenticated()} in
+     * {@code SecurityConfig}, unlike the rest of {@code /api/auth/**}) is
+     * the only way the SPA can restore auth state after a hard refresh.
+     * Spring Security populates {@code principal} from the {@code token}
+     * cookie via {@code JwtAuthFilter}; an absent/invalid cookie never
+     * reaches this method body at all — the security filter chain rejects
+     * it with 401/403 first.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<AuthResponse> getCurrentUser(@AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(authService.toAuthResponse(principal.getUser()));
     }
 
     /**

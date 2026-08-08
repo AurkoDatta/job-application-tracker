@@ -5,8 +5,9 @@ import './index.css'
 import App from './App.jsx'
 
 // BrowserRouter wraps the whole app so pages/components can use react-router
-// hooks. AuthProvider is intentionally NOT added here yet — that lands in
-// Task 7 once auth state/context exists.
+// hooks. AuthProvider lives inside App.jsx (not here) so it can sit below
+// BrowserRouter but still wrap the auth-aware route table that needs
+// react-router hooks (useNavigate, Navigate) alongside useAuth.
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
