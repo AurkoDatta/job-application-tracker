@@ -13,8 +13,13 @@ import ApplicationCard from './ApplicationCard'
  * @param {Function} props.onRename (id, name) => void — commits a rename
  * @param {Function} props.onDelete (id) => void — deletes the column
  * @param {Function} [props.onCardClick] forwarded to each `ApplicationCard`
+ * @param {Function} [props.onAddApplication] (columnId) => void — opens
+ *   `ApplicationModal` in create mode, pre-targeted at this column. Not to
+ *   be confused with `AddColumnForm` (board-level, adds a new *column*) —
+ *   this control lives inside one existing column and adds a new
+ *   *application* into it.
  */
-function KanbanColumn({ column, applications, onRename, onDelete, onCardClick }) {
+function KanbanColumn({ column, applications, onRename, onDelete, onCardClick, onAddApplication }) {
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState(column.name)
 
@@ -102,6 +107,17 @@ function KanbanColumn({ column, applications, onRename, onDelete, onCardClick })
           </div>
         )}
       </Droppable>
+
+      {/* Below the card list, outside the Droppable — deliberately not a
+          draggable/droppable target itself, just a static control that
+          opens ApplicationModal in create mode for this column. */}
+      <button
+        type="button"
+        onClick={() => onAddApplication?.(column.id)}
+        className="m-2 rounded border border-dashed border-slate/40 py-1.5 font-mono text-xs uppercase tracking-wide text-slate hover:border-stamp hover:text-stamp"
+      >
+        + Add application
+      </button>
     </div>
   )
 }

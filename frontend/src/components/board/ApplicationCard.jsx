@@ -14,8 +14,6 @@ const PRIORITY_BADGE_CLASSES = {
 
 /**
  * One draggable Kanban card showing a read-only summary of an application.
- * This task does not build the create/edit form (Task 9's `ApplicationModal`)
- * — `onCardClick` is wired up but intentionally does nothing meaningful yet.
  *
  * @param {object} props
  * @param {object} props.application the application to render (id, company,
@@ -23,7 +21,7 @@ const PRIORITY_BADGE_CLASSES = {
  * @param {number} props.index the card's index within its column, required
  *   by `@hello-pangea/dnd`'s `Draggable` to compute drag offsets
  * @param {Function} [props.onCardClick] called with the application on click;
- *   Task 9 will wire this to open `ApplicationModal`
+ *   `KanbanBoard` wires this to open `ApplicationModal` in edit mode (Task 9)
  */
 function ApplicationCard({ application, index, onCardClick }) {
   const priorityColor = PRIORITY_COLORS[application.priority]

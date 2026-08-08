@@ -1,10 +1,7 @@
 import api from './api'
 
-// Thin wrappers around `/api/applications` for what Task 8's Kanban board
-// needs: listing the board's cards and moving one via drag-and-drop.
-// `createApplication`/`updateApplication`/`deleteApplication` are Task 9's
-// job (the create/edit modal) — deliberately left unstubbed here rather
-// than adding dead exports with no caller yet.
+// Thin wrappers around `/api/applications`: listing/moving (Task 8's
+// Kanban board) plus create/update/delete (Task 9's create/edit modal).
 
 /**
  * Fetches the current user's applications, optionally filtered.
@@ -33,4 +30,42 @@ export function getApplications(params = {}) {
  */
 export function moveApplication(id, destination) {
   return api.patch(`/applications/${id}/move`, destination).then(() => undefined)
+}
+
+/**
+ * Creates a new application card.
+ *
+ * @param {object} data fields matching the backend's `ApplicationRequest`
+ *   (`columnId`, `company`, `role`, `priority` required; the rest optional)
+ * @returns {Promise<object>} the created application, as returned by the backend
+ */
+export function createApplication(data) {
+  return api.post('/applications', data).then((res) => res.data)
+}
+
+/**
+ * Fully edits an existing application's fields. Per the backend's own
+ * design (Task 4), this can never move the card between columns — `data`
+ * must still include a non-blank `columnId` (the DTO requires it), but the
+ * backend deliberately ignores it here; only the drag-and-drop `/move`
+ * endpoint changes `columnId`/`order`.
+ *
+ * @param {string} id the application's id
+ * @param {object} data fields matching the backend's `ApplicationRequest`
+ * @returns {Promise<object>} the updated application
+ */
+export function updateApplication(id, data) {
+  return api.put(`/applications/${id}`, data).then((res) => res.data)
+}
+
+/**
+ * Deletes an application card. There is no separate "archive" endpoint —
+ * this is a hard delete, so the caller (the edit modal) is responsible for
+ * confirming with the user first.
+ *
+ * @param {string} id the application's id
+ * @returns {Promise<void>}
+ */
+export function deleteApplication(id) {
+  return api.delete(`/applications/${id}`).then(() => undefined)
 }

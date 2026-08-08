@@ -55,3 +55,32 @@ export function validateRequired(value, fieldName) {
   }
   return null
 }
+
+// Deliberately loose — a full RFC 3986 URL parser would reject plenty of
+// real, pasteable job-posting links (bare domains, unusual TLDs). This only
+// checks for a scheme and a dot, which is enough to catch the common
+// mistake (pasting a search query, or a domain with no scheme) without
+// being a strict gate.
+const URL_HINT_PATTERN = /^https?:\/\/.+\..+/i
+
+/**
+ * Soft, non-blocking check for whether a job posting URL "looks like" a
+ * URL. Unlike `validateEmail`/`validatePassword`/`validateRequired`, this
+ * is never wired to block submission — the backend's `ApplicationRequest`
+ * DTO has no format constraint on `jobUrl` at all (see Task 4's design
+ * note: job posting URLs are messy in the wild, and the field is purely
+ * informational). This exists only to show an inline hint the user is free
+ * to ignore and submit anyway.
+ *
+ * @param {string} url the value to check
+ * @returns {string|null} a hint message, or null if it looks fine or is empty
+ */
+export function validateUrlHint(url) {
+  if (!url || !url.trim()) {
+    return null
+  }
+  if (!URL_HINT_PATTERN.test(url.trim())) {
+    return "Doesn't look like a full URL (e.g. https://example.com/job) — you can still save it as-is."
+  }
+  return null
+}

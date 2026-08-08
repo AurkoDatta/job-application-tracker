@@ -17,8 +17,22 @@ import { diffOrderChanges, moveAcrossColumns, reorderWithinColumn } from '../uti
  * — no deep-cloning required, since nothing here ever mutates an
  * application object in place.
  *
+ * `createApplication`/`updateApplication`/`deleteApplication` (Task 9's
+ * create/edit modal) deliberately do NOT reuse the optimistic-update-with-
+ * rollback pattern above. The modal is a deliberate-submit form — it
+ * already shows its own "Saving…"/"Deleting…" state while a request is in
+ * flight, so there is no instant-feel interaction to protect the way a
+ * drag needs. These three instead: call the API, and only on success touch
+ * local `applications` state (append/replace-by-id/filter-out-by-id); on
+ * failure they let the rejection propagate to the caller instead of
+ * catching it here, so the modal's own try/catch can show the error inline
+ * and keep itself open for retry — board state is left completely
+ * untouched on failure, unlike the rollback dance `moveApplication` needs.
+ *
  * @returns {{applications: Array<object>, loading: boolean, error: string|null,
- *   moveApplication: Function, refetch: Function, clearError: Function}}
+ *   moveApplication: Function, createApplication: Function,
+ *   updateApplication: Function, deleteApplication: Function,
+ *   refetch: Function, clearError: Function}}
  */
 export function useApplications() {
   const [applications, setApplications] = useState([])
@@ -144,11 +158,61 @@ export function useApplications() {
     }
   }
 
+  /**
+   * Creates a new application card. Wait-then-update (see the hook's
+   * top-level comment for why this is deliberately NOT optimistic): the
+   * POST is awaited, and only on success is the created record (with its
+   * backend-assigned `id`/`order`) appended to local state. Rejects on
+   * failure without touching `applications` — the caller (`ApplicationModal`)
+   * is expected to catch this and show the error itself.
+   *
+   * @param {object} data fields matching the backend's `ApplicationRequest`
+   * @returns {Promise<object>} the created application
+   */
+  async function createApplication(data) {
+    const created = await applicationService.createApplication(data)
+    setApplications((prev) => [...prev, created])
+    return created
+  }
+
+  /**
+   * Edits an existing application card. Wait-then-update, same rationale as
+   * `createApplication` above. Replaces the matching entry (by `id`) in
+   * local state with the backend's response on success; rejects without
+   * touching state on failure.
+   *
+   * @param {string} id the application's id
+   * @param {object} data fields matching the backend's `ApplicationRequest`
+   * @returns {Promise<object>} the updated application
+   */
+  async function updateApplication(id, data) {
+    const updated = await applicationService.updateApplication(id, data)
+    setApplications((prev) => prev.map((app) => (app.id === id ? updated : app)))
+    return updated
+  }
+
+  /**
+   * Deletes an application card. Wait-then-update, same rationale as
+   * `createApplication` above. Removes the matching entry (by `id`) from
+   * local state only after the DELETE succeeds; rejects without touching
+   * state on failure.
+   *
+   * @param {string} id the application's id
+   * @returns {Promise<void>}
+   */
+  async function deleteApplication(id) {
+    await applicationService.deleteApplication(id)
+    setApplications((prev) => prev.filter((app) => app.id !== id))
+  }
+
   return {
     applications,
     loading,
     error,
     moveApplication,
+    createApplication,
+    updateApplication,
+    deleteApplication,
     refetch: fetchApplications,
     clearError: () => setError(null),
   }

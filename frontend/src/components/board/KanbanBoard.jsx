@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { useColumns } from '../../hooks/useColumns'
 import { useApplications } from '../../hooks/useApplications'
 import KanbanColumn from './KanbanColumn'
 import AddColumnForm from './AddColumnForm'
+import ApplicationModal from '../modal/ApplicationModal'
 
 /**
  * The Kanban board: owns `useColumns`/`useApplications` (both hooks'
@@ -18,6 +20,15 @@ import AddColumnForm from './AddColumnForm'
  * `useApplications.moveApplication`'s rollback), which must leave the
  * board itself visible and reverted, not hidden behind a blocking error
  * screen.
+ *
+ * Also owns the single `ApplicationModal` instance for the whole board
+ * (Task 9): one modal, driven by `modalState`, reused for both "click a
+ * card to edit it" and "click a column's + Add application to create one"
+ * — `useApplications`' create/update/delete functions are threaded straight
+ * down as props rather than wrapped, since they already update local
+ * `applications` state on success (see `useApplications.js`'s wait-then-
+ * update pattern for why that's safe to do directly, unlike the drag-and-
+ * drop path above).
  */
 function KanbanBoard() {
   const {
@@ -34,8 +45,25 @@ function KanbanBoard() {
     loading: applicationsLoading,
     error: applicationsError,
     moveApplication,
+    createApplication,
+    updateApplication,
+    deleteApplication,
     clearError: clearApplicationsError,
   } = useApplications()
+
+  // Single source of truth for the board's one ApplicationModal instance:
+  // which mode it's in, and which application/column it's targeting.
+  // `application`/`columnId` are mutually relevant only to their own mode
+  // (edit reads `application`, create reads `columnId`) but kept in one
+  // object so opening the modal is always a single atomic state update —
+  // no risk of a stale `application` from a previous edit leaking into a
+  // newly-opened create, or vice versa.
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    mode: 'create',
+    application: null,
+    columnId: null,
+  })
 
   const loading = columnsLoading || applicationsLoading
   const error = columnsError || applicationsError
@@ -54,8 +82,15 @@ function KanbanBoard() {
   }
 
   function handleCardClick(application) {
-    // Task 9 wires this to open `ApplicationModal`; nothing to open yet.
-    console.log('card clicked (Task 9 will open the edit modal):', application)
+    setModalState({ isOpen: true, mode: 'edit', application, columnId: null })
+  }
+
+  function handleAddApplication(columnId) {
+    setModalState({ isOpen: true, mode: 'create', application: null, columnId })
+  }
+
+  function closeModal() {
+    setModalState((prev) => ({ ...prev, isOpen: false }))
   }
 
   if (loading) {
@@ -88,11 +123,23 @@ function KanbanBoard() {
               onRename={renameColumn}
               onDelete={deleteColumn}
               onCardClick={handleCardClick}
+              onAddApplication={handleAddApplication}
             />
           ))}
           <AddColumnForm onCreate={createColumn} />
         </div>
       </DragDropContext>
+
+      <ApplicationModal
+        isOpen={modalState.isOpen}
+        mode={modalState.mode}
+        application={modalState.application}
+        columnId={modalState.columnId}
+        onClose={closeModal}
+        onCreate={createApplication}
+        onUpdate={updateApplication}
+        onDelete={deleteApplication}
+      />
     </div>
   )
 }
