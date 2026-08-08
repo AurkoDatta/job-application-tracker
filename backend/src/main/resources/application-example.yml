@@ -5,6 +5,7 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/jobtracker
+      auto-index-creation: true
 
 server:
   port: 8080

@@ -2,6 +2,11 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/jobtracker}
+      # Spring Data MongoDB disables automatic index creation by default
+      # (since Spring Boot 2.4 / Spring Data MongoDB 3.x) — without this,
+      # @Indexed(unique = true) on User.email is inert and duplicate emails
+      # would only be rejected by the racy application-level check.
+      auto-index-creation: true
 
 server:
   port: 8080

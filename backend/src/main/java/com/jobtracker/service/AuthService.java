@@ -2,6 +2,7 @@ package com.jobtracker.service;
 
 import java.time.Instant;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -54,7 +55,20 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .createdAt(Instant.now())
                 .build();
-        User saved = userRepository.save(user);
+
+        User saved;
+        try {
+            saved = userRepository.save(user);
+        } catch (DuplicateKeyException ex) {
+            // Defense-in-depth: the findByEmail check above is racy under
+            // concurrent registrations for the same email — two requests
+            // can both pass it before either saves. The unique index on
+            // User.email (auto-index-creation: true) is the real guard;
+            // this translates its violation into the same 409 the
+            // application-level check produces, instead of an unhandled
+            // 500 from a raw Mongo duplicate-key error.
+            throw new DuplicateEmailException("An account with this email already exists");
+        }
 
         String token = jwtUtil.generate(saved.getEmail());
         return new AuthResult(token, toAuthResponse(saved));

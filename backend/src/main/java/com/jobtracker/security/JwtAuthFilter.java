@@ -2,6 +2,8 @@ package com.jobtracker.security;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,6 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String COOKIE_NAME = "token";
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
@@ -52,13 +55,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // reject access to protected endpoints normally — this filter
         // itself never throws for that case.
         if (token != null && jwtUtil.validate(token)) {
-            String email = jwtUtil.extractEmail(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            try {
+                String email = jwtUtil.extractEmail(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            } catch (Exception ex) {
+                // A well-signed, unexpired token can still fail to resolve
+                // to a user (e.g. the account was deleted after the token
+                // was issued) — loadUserByUsername throws
+                // UsernameNotFoundException in that case. This filter runs
+                // before DispatcherServlet, so GlobalExceptionHandler's
+                // @RestControllerAdvice cannot catch it; left unhandled it
+                // would surface as a raw 500 instead of the filter's
+                // intended fail-closed behavior. Catching broadly (not just
+                // UsernameNotFoundException) keeps that same fail-closed
+                // guarantee against any other lookup failure too — treat it
+                // exactly like a missing/invalid cookie: log and continue
+                // unauthenticated, let SecurityConfig's authorization rules
+                // reject protected endpoints normally.
+                log.debug("Failed to resolve user for a validly-signed token; continuing unauthenticated", ex);
+            }
         }
 
         filterChain.doFilter(request, response);
