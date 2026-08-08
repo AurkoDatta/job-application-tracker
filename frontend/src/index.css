@@ -1,0 +1,12 @@
+/* Self-hosted fonts (no external CDN) — weights limited to what the UI
+   actually uses: Inter 400/500/600 for body/labels/emphasis, IBM Plex Mono
+   500/600 for headings/tracking-codes/stat numbers. */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
