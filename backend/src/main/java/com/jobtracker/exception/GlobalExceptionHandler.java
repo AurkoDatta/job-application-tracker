@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Centralized exception handler that maps custom and framework exceptions
@@ -54,6 +55,20 @@ public class GlobalExceptionHandler {
         body.put("timestamp", Instant.now());
         body.put("errors", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    /**
+     * Maps a request-param binding failure (e.g. {@code ?priority=URGENT}
+     * where {@code Priority} has no such enum constant) to 400 Bad Request.
+     * Spring throws this from the binding layer before the controller
+     * method body runs, so without this handler it would otherwise fall
+     * through to the generic 500 handler below — added in Task 4 since
+     * Task 2 only had body-validation ({@code @Valid}) failures to handle.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String message = "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'";
+        return buildResponse(HttpStatus.BAD_REQUEST, message);
     }
 
     /** Catch-all fallback so unexpected failures still return the standard error shape, not a raw stack trace. */
