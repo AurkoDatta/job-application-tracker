@@ -1,0 +1,10 @@
+# Example local configuration for onboarding — copy the relevant env vars
+# into your shell/.env, do not commit real secrets. application.yml already
+# falls back to these same local-safe defaults when the env vars are unset.
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/jobtracker
+
+server:
+  port: 8080
