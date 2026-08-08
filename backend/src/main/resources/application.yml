@@ -5,3 +5,13 @@ spring:
 
 server:
   port: 8080
+
+jwt:
+  # Local-dev-only placeholder (32+ chars so HS256/HS512 key-length validation
+  # doesn't fail at startup) — not a real secret, same pattern as the Mongo
+  # URI default above. Override via JWT_SECRET in any real deployment.
+  secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-please-32chars-min}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24h
+
+cookie:
+  secure: ${COOKIE_SECURE:false}   # false for local http dev; must be true in any real deployment over https
