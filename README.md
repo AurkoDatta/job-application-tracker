@@ -85,9 +85,12 @@ maps these automatically since `application.yml` references them):
 | `JWT_SECRET` (via `jwt.secret`) | JWT signing secret | a placeholder — **replace with a real random secret of 32+ chars** before anything beyond local dev |
 | `JWT_EXPIRATION_MS` (via `jwt.expiration-ms`) | JWT lifetime, in ms | `86400000` (24h) |
 | `COOKIE_SECURE` (via `cookie.secure`) | `Secure` flag on the auth cookie | `false` — set `true` once served over HTTPS |
+| `CORS_ALLOWED_ORIGIN_PATTERN` (via `cors.allowed-origin-pattern`) | allowed CORS origin pattern | `http://localhost:[*]` — a local-dev-only wildcard; override to your real origin(s) for any non-local deployment |
 | `LOGGING_LEVEL_COM_JOBTRACKER` | log verbosity for `com.jobtracker.*` | `INFO` |
 
-Run the backend test suite (31 JUnit tests, MongoDB must be reachable):
+Run the backend test suite (31 JUnit tests, all Mockito-based unit tests
+against mocked repositories/`MongoTemplate` — no `@SpringBootTest`, so no
+live MongoDB connection is needed to run them):
 
 ```bash
 ./mvnw test
@@ -152,3 +155,11 @@ discovered late — decisions made to keep scope bounded at each stage):
 - No frontend test runner is configured — in particular,
   `utils/dndReorder.js`'s reorder/diff math has no unit tests despite
   being the trickiest pure logic in the frontend.
+- Drag-and-drop is intentionally **disabled whenever any filter is
+  active** (company, priority, or date range). This is correct-by-design,
+  not a bug: reordering renumbers a column's applications based on
+  whatever's currently loaded, and a filtered view is only a partial
+  slice of a column's real contents, so allowing a drag against that
+  partial view would silently corrupt the true stored order of the
+  applications the filter is hiding. Clear the filters to resume
+  reordering.
