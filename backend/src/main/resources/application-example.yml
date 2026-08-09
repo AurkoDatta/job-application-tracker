@@ -17,6 +17,9 @@ jwt:
 cookie:
   secure: false   # set to true when serving the frontend over https
 
+cors:
+  allowed-origin-pattern: http://localhost:[*]   # override for any real (non-local) deployment
+
 logging:
   level:
     # Defaults to INFO; override via the LOGGING_LEVEL_COM_JOBTRACKER env

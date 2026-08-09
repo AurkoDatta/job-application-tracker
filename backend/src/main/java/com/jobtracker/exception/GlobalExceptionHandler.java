@@ -1,6 +1,5 @@
 package com.jobtracker.exception;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -66,10 +65,7 @@ public class GlobalExceptionHandler {
         );
         log.warn("Validation failed: {}", fieldErrors);
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("message", "Validation failed");
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("timestamp", Instant.now());
+        Map<String, Object> body = ErrorResponseFactory.build(HttpStatus.BAD_REQUEST, "Validation failed");
         body.put("errors", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
@@ -97,10 +93,6 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("message", message);
-        body.put("status", status.value());
-        body.put("timestamp", Instant.now());
-        return ResponseEntity.status(status).body(body);
+        return ResponseEntity.status(status).body(ErrorResponseFactory.build(status, message));
     }
 }

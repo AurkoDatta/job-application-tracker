@@ -55,13 +55,19 @@ public class AuthService {
      * @throws DuplicateEmailException if the email is already registered
      */
     public AuthResult register(RegisterRequest request) {
-        userRepository.findByEmail(request.email()).ifPresent(existing -> {
+        // Normalized once, here, and used for every lookup/store below —
+        // see normalizeEmail()'s Javadoc for why this must happen before
+        // the very first repository call rather than being applied
+        // piecemeal at each use site.
+        String email = normalizeEmail(request.email());
+
+        userRepository.findByEmail(email).ifPresent(existing -> {
             throw new DuplicateEmailException("An account with this email already exists");
         });
 
         User user = User.builder()
                 .name(request.name())
-                .email(request.email())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .createdAt(Instant.now())
                 .build();
@@ -100,7 +106,7 @@ public class AuthService {
      * @throws InvalidCredentialsException if the email is unknown or the password doesn't match
      */
     public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmail(normalizeEmail(request.email()))
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -124,6 +130,24 @@ public class AuthService {
      */
     public AuthResponse toAuthResponse(User user) {
         return new AuthResponse(user.getId(), user.getName(), user.getEmail());
+    }
+
+    /**
+     * Normalizes an email to lowercase, the single point both
+     * {@link #register} and {@link #login} funnel through before touching
+     * {@code userRepository}. Without this, {@code Aurko@example.com} and
+     * {@code aurko@example.com} register as two distinct accounts (the
+     * unique index on {@code User.email} is case-sensitive) and a user who
+     * registered with one capitalization can't log back in with another.
+     * Centralizing the lowercasing here — rather than scattering
+     * {@code .toLowerCase()} calls at each repository call site — means
+     * every current and future lookup/save automatically stays consistent.
+     *
+     * @param email the raw, as-typed email from the request
+     * @return the same address, lowercased
+     */
+    private String normalizeEmail(String email) {
+        return email.toLowerCase();
     }
 
     /** Carries both the raw JWT (for the cookie) and the public user DTO (for the JSON body) back to the controller. */

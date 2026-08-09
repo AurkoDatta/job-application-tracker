@@ -1,7 +1,11 @@
 package com.jobtracker.config;
 
+import java.util.Map;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -11,10 +15,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jobtracker.exception.ErrorResponseFactory;
 import com.jobtracker.security.JwtAuthFilter;
 
 /**
@@ -33,15 +40,18 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final ObjectMapper objectMapper;
 
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
             UserDetailsService userDetailsService,
-            CorsConfigurationSource corsConfigurationSource
+            CorsConfigurationSource corsConfigurationSource,
+            ObjectMapper objectMapper
     ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.corsConfigurationSource = corsConfigurationSource;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -57,6 +67,18 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Without an explicit entry point, Spring Security falls back
+                // to Http403ForbiddenEntryPoint for any unauthenticated
+                // request to a protected endpoint — a bare 403 with Spring
+                // Boot's generic {timestamp, status, error, path} body, not
+                // this project's standard error shape. jsonAuthenticationEntryPoint()
+                // below replaces that with a 401 (the semantically correct
+                // code for "no valid credentials were presented") carrying
+                // the same {message, status, timestamp} shape
+                // GlobalExceptionHandler produces for everything that reaches
+                // a controller — this request never does, since the security
+                // filter chain rejects it first.
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(jsonAuthenticationEntryPoint()))
                 .authorizeHttpRequests(auth -> auth
                         // More specific matcher must precede the broader
                         // "/api/auth/**" permitAll() below — Spring Security
@@ -73,6 +95,30 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Writes this project's standard {@code {message, status, timestamp}}
+     * JSON error body (via {@link ErrorResponseFactory}, the same builder
+     * {@code GlobalExceptionHandler} uses) with a 401 status, for any
+     * request that reaches a protected endpoint without valid credentials.
+     * This runs inside the security filter chain — before
+     * {@code DispatcherServlet} and therefore before
+     * {@code GlobalExceptionHandler}'s {@code @RestControllerAdvice} could
+     * ever see the request — so the body has to be written directly to the
+     * response here rather than by throwing something the advice could
+     * catch.
+     */
+    @Bean
+    public AuthenticationEntryPoint jsonAuthenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            Map<String, Object> body = ErrorResponseFactory.build(
+                    HttpStatus.UNAUTHORIZED, "Authentication required"
+            );
+            objectMapper.writeValue(response.getWriter(), body);
+        };
     }
 
     /** BCrypt is the standard, adaptive-cost hashing algorithm for password storage. */

@@ -21,6 +21,14 @@ jwt:
 cookie:
   secure: ${COOKIE_SECURE:false}   # false for local http dev; must be true in any real deployment over https
 
+cors:
+  # Wildcard-localhost-port pattern, safe only because it stays scoped to
+  # localhost (see CorsConfig's class-level comment for the full rationale).
+  # Default here is what every documented local-dev setup in the README
+  # relies on; override via CORS_ALLOWED_ORIGIN_PATTERN for any real
+  # deployment so this pattern doesn't silently follow the app there.
+  allowed-origin-pattern: ${CORS_ALLOWED_ORIGIN_PATTERN:http://localhost:[*]}
+
 logging:
   level:
     # Default INFO for normal operation (business-event logs from the
