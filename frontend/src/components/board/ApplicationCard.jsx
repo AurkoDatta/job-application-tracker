@@ -7,7 +7,7 @@ import { PRIORITY_COLORS, PRIORITY_LABELS } from '../../utils/priority'
 // interpolated class would never be generated into the compiled CSS. This
 // map is what makes the dynamic-per-priority styling actually work.
 const PRIORITY_BADGE_CLASSES = {
-  slate: 'border-slate/40 text-slate',
+  moss: 'border-moss/40 text-moss',
   amber: 'border-amber/40 text-amber',
   rust: 'border-rust/40 text-rust',
 }

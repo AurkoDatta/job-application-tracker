@@ -141,6 +141,14 @@ function ApplicationModal({ isOpen, mode, application, columnId, onClose, onCrea
 
   async function handleSave(e) {
     e.preventDefault()
+
+    // Defense-in-depth reentrancy guard: the Save button's `disabled`
+    // attribute already prevents a second click while a save is in
+    // flight, but that's a synchronous DOM update racing a very fast
+    // second click/Enter-submit. Bailing out here removes any doubt —
+    // a submit that arrives while one is already in flight is a no-op.
+    if (submitting) return
+
     setFormError(null)
 
     // Guard clause: bail out before touching the network at all if
@@ -379,7 +387,7 @@ function ApplicationModal({ isOpen, mode, application, columnId, onClose, onCrea
         message="Delete this application? This can't be undone."
         confirmLabel={deleting ? 'Deleting…' : 'Delete'}
         cancelLabel="Cancel"
-        destructive
+        destructive={true}
         onConfirm={handleConfirmDelete}
         onCancel={() => !deleting && setConfirmDeleteOpen(false)}
       />

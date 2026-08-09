@@ -8,7 +8,7 @@
  * Tailwind color token (from `tailwind.config.js`) used to render it.
  */
 export const PRIORITY_COLORS = {
-  LOW: 'slate',
+  LOW: 'moss',
   MEDIUM: 'amber',
   HIGH: 'rust',
 }

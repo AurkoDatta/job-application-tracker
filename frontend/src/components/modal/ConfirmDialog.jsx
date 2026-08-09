@@ -23,7 +23,10 @@ import { useEffect } from 'react'
  * @param {string} [props.cancelLabel] cancel button label, default 'Cancel'
  * @param {boolean} [props.destructive] whether the confirmed action is
  *   destructive — styles the confirm button with `rust` instead of `stamp`
- *   when true (default true, since the only caller today is a delete flow)
+ *   when true (default false: this component is generic/reusable beyond
+ *   the delete-application flow it was originally built for, so destructive
+ *   styling is opt-in — callers that need it, like the delete-confirmation
+ *   flow below, pass `destructive` explicitly)
  * @param {Function} props.onConfirm called when the confirm button is clicked
  * @param {Function} props.onCancel called on cancel click, backdrop click, or Escape
  */
@@ -33,7 +36,7 @@ function ConfirmDialog({
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
-  destructive = true,
+  destructive = false,
   onConfirm,
   onCancel,
 }) {

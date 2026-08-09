@@ -13,13 +13,21 @@ import * as columnService from '../services/columnService'
  * both are equally "something about columns went wrong") without
  * rendering a stale/optimistic column list.
  *
- * @returns {{columns: Array<object>, loading: boolean, error: string|null,
- *   createColumn: Function, renameColumn: Function, deleteColumn: Function,
- *   refetch: Function, clearError: Function}}
+ * @returns {{columns: Array<object>, loading: boolean, refreshing: boolean,
+ *   error: string|null, createColumn: Function, renameColumn: Function,
+ *   deleteColumn: Function, refetch: Function, clearError: Function}}
  */
 export function useColumns() {
   const [columns, setColumns] = useState([])
   const [loading, setLoading] = useState(true)
+  // Separate from `loading`: `loading` is reserved for the true initial
+  // mount fetch (below), while `refreshing` covers every post-mutation
+  // refetch (create/rename/delete). Without this split, every small column
+  // edit re-set the same `loading` flag consumers use to decide whether to
+  // render the board at all, which unmounted/remounted the drag-and-drop
+  // tree on every edit — a visible full-board flash for what should be an
+  // invisible background refresh.
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
 
   const fetchColumns = useCallback(async () => {
@@ -40,6 +48,25 @@ export function useColumns() {
     }
   }, [])
 
+  /**
+   * Same fetch as `fetchColumns`, but tracked via `refreshing` instead of
+   * `loading` — used for every post-mutation refetch so consumers can keep
+   * rendering the current board (rather than unmounting it) while the
+   * refreshed list comes back.
+   */
+  const refreshColumns = useCallback(async () => {
+    try {
+      setRefreshing(true)
+      setError(null)
+      const data = await columnService.getColumns()
+      setColumns([...data].sort((a, b) => a.order - b.order))
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Failed to load columns.')
+    } finally {
+      setRefreshing(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchColumns()
   }, [fetchColumns])
@@ -52,7 +79,7 @@ export function useColumns() {
   async function createColumn(name) {
     try {
       await columnService.createColumn({ name })
-      await fetchColumns()
+      await refreshColumns()
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to create column.')
     }
@@ -66,7 +93,7 @@ export function useColumns() {
   async function renameColumn(id, name) {
     try {
       await columnService.updateColumn(id, { name })
-      await fetchColumns()
+      await refreshColumns()
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to rename column.')
     }
@@ -79,7 +106,7 @@ export function useColumns() {
   async function deleteColumn(id) {
     try {
       await columnService.deleteColumn(id)
-      await fetchColumns()
+      await refreshColumns()
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to delete column.')
     }
@@ -88,6 +115,7 @@ export function useColumns() {
   return {
     columns,
     loading,
+    refreshing,
     error,
     createColumn,
     renameColumn,
