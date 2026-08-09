@@ -3,6 +3,8 @@ import StatCard from '../components/stats/StatCard'
 import ConversionFunnelChart from '../components/stats/ConversionFunnelChart'
 import ApplicationsOverTimeChart from '../components/stats/ApplicationsOverTimeChart'
 import StatusDistributionChart from '../components/stats/StatusDistributionChart'
+import Spinner from '../components/common/Spinner'
+import ErrorBanner from '../components/common/ErrorBanner'
 
 /**
  * Analytics page (Task 11): fetches `GET /api/stats` via `useStats` and
@@ -36,7 +38,7 @@ function Stats() {
   if (loading) {
     return (
       <main className="min-h-screen px-6 py-6">
-        <p className="font-mono text-sm uppercase tracking-widest text-slate">Loading stats…</p>
+        <Spinner label="Loading stats…" />
       </main>
     )
   }
@@ -44,9 +46,7 @@ function Stats() {
   if (error) {
     return (
       <main className="min-h-screen px-6 py-6">
-        <div className="flex items-center justify-between gap-4 rounded border border-rust/40 bg-rust/10 px-4 py-2 text-sm text-rust">
-          <span>{error}</span>
-        </div>
+        <ErrorBanner message={error} />
       </main>
     )
   }

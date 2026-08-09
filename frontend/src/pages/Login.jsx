@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { validateEmail, validatePassword } from '../utils/validators.js'
+import ErrorBanner from '../components/common/ErrorBanner'
 
 /**
  * Login page: email/password form wired to `AuthContext.login`.
@@ -89,7 +90,7 @@ function Login() {
             {fieldErrors.password && <p className="mt-1 text-xs text-rust">{fieldErrors.password}</p>}
           </div>
 
-          {formError && <p className="text-sm text-rust">{formError}</p>}
+          {formError && <ErrorBanner message={formError} />}
 
           <button
             type="submit"

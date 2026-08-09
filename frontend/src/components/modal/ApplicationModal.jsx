@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { validateRequired, validateUrlHint } from '../../utils/validators'
 import ConfirmDialog from './ConfirmDialog'
+import ErrorBanner from '../common/ErrorBanner'
 
 /** Default form values for a brand-new (create-mode) application. */
 const EMPTY_FORM = {
@@ -345,7 +346,7 @@ function ApplicationModal({ isOpen, mode, application, columnId, onClose, onCrea
             />
           </div>
 
-          {formError && <p className="text-sm text-rust">{formError}</p>}
+          {formError && <ErrorBanner message={formError} />}
 
           <div className="flex items-center justify-between gap-3 pt-2">
             {mode === 'edit' ? (

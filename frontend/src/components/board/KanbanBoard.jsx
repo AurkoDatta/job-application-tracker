@@ -6,6 +6,8 @@ import { hasActiveFilters } from '../../utils/filters'
 import KanbanColumn from './KanbanColumn'
 import AddColumnForm from './AddColumnForm'
 import ApplicationModal from '../modal/ApplicationModal'
+import Spinner from '../common/Spinner'
+import ErrorBanner from '../common/ErrorBanner'
 
 /**
  * The Kanban board: owns `useColumns`/`useApplications` (both hooks'
@@ -123,22 +125,14 @@ function KanbanBoard({ filters }) {
   }
 
   if (loading) {
-    return <p className="font-mono text-sm uppercase tracking-widest text-slate">Loading board…</p>
+    return <Spinner label="Loading board…" />
   }
 
   return (
     <div>
       {error && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded border border-rust/40 bg-rust/10 px-4 py-2 text-sm text-rust">
-          <span>{error}</span>
-          <button
-            type="button"
-            onClick={dismissError}
-            aria-label="Dismiss error"
-            className="font-mono text-xs uppercase tracking-wide text-rust hover:text-rust/80"
-          >
-            Dismiss
-          </button>
+        <div className="mb-4">
+          <ErrorBanner message={error} onDismiss={dismissError} />
         </div>
       )}
 

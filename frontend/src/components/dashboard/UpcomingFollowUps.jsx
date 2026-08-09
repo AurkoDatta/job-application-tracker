@@ -1,5 +1,6 @@
 import { useApplications } from '../../hooks/useApplications'
 import { daysUntil, formatRelativeLabel } from '../../utils/dateFormat'
+import Spinner from '../common/Spinner'
 
 /**
  * Small, self-contained dashboard widget listing applications whose
@@ -24,7 +25,7 @@ function UpcomingFollowUps() {
   const { applications, loading } = useApplications()
 
   if (loading) {
-    return <p className="font-mono text-xs uppercase tracking-widest text-slate">Loading follow-ups…</p>
+    return <Spinner label="Loading follow-ups…" />
   }
 
   // Inclusive 0-7 day window (today through 7 days out), non-null

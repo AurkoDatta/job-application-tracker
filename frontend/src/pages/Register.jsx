@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import { validateEmail, validatePassword, validateRequired } from '../utils/validators.js'
+import ErrorBanner from '../components/common/ErrorBanner'
 
 /**
  * Register page: name/email/password form wired to `AuthContext.register`.
@@ -99,7 +100,7 @@ function Register() {
             {fieldErrors.password && <p className="mt-1 text-xs text-rust">{fieldErrors.password}</p>}
           </div>
 
-          {formError && <p className="text-sm text-rust">{formError}</p>}
+          {formError && <ErrorBanner message={formError} />}
 
           <button
             type="submit"
