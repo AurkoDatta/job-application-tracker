@@ -23,3 +23,6 @@ backend/.env
 
 # Claude Code subagent-driven-development scratch workspace
 .superpowers/
+
+# Playwright MCP trace/console artifacts from manual verification runs
+.playwright-mcp/
