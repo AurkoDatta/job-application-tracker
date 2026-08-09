@@ -29,30 +29,49 @@ import { diffOrderChanges, moveAcrossColumns, reorderWithinColumn } from '../uti
  * and keep itself open for retry — board state is left completely
  * untouched on failure, unlike the rollback dance `moveApplication` needs.
  *
+ * @param {{company?: string, priority?: string, startDate?: string, endDate?: string}} [filters]
+ *   optional query filters (Task 12), forwarded verbatim to
+ *   `applicationService.getApplications`. Undefined/omitted, or an object
+ *   with all fields empty, behaves identically to calling with no filters
+ *   at all — see the effect below for how a change here triggers a refetch.
  * @returns {{applications: Array<object>, loading: boolean, error: string|null,
  *   moveApplication: Function, createApplication: Function,
  *   updateApplication: Function, deleteApplication: Function,
  *   refetch: Function, clearError: Function}}
  */
-export function useApplications() {
+export function useApplications(filters) {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Serialized separately from the effect's dependency array below rather
+  // than depending on `filters` itself: callers (e.g. `KanbanBoard`) pass a
+  // filters object that's very likely a brand-new literal on every one of
+  // THEIR renders, even when its actual field values haven't changed. If
+  // the effect depended on that object reference directly, it would refetch
+  // on every parent render, not just on every actual filter change — a
+  // classic object-identity dependency-array bug. JSON.stringify collapses
+  // the object down to a primitive string, so the effect only re-runs when
+  // the VALUES inside `filters` actually differ.
+  const filtersKey = JSON.stringify(filters ?? {})
 
   const fetchApplications = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      // No filter params yet (Task 12 adds a filter UI) — omitting them
-      // matches the backend's "no filters = all applications" behavior.
-      const data = await applicationService.getApplications()
+      const data = await applicationService.getApplications(filters)
       setApplications(data)
     } catch (err) {
       setError(err.response?.data?.message ?? 'Failed to load applications.')
     } finally {
       setLoading(false)
     }
-  }, [])
+    // `filtersKey` (a stable serialization of `filters`, see above) is the
+    // intentional dependency here; including the `filters` object itself
+    // would reintroduce the identity-churn bug this comment already
+    // explains.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey])
 
   useEffect(() => {
     fetchApplications()

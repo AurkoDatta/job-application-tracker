@@ -18,8 +18,13 @@ import ApplicationCard from './ApplicationCard'
  *   be confused with `AddColumnForm` (board-level, adds a new *column*) —
  *   this control lives inside one existing column and adds a new
  *   *application* into it.
+ * @param {boolean} [props.dragDisabled] forwarded to every `ApplicationCard`
+ *   in this column (Task 12) — true while any board filter is active, since
+ *   `applications` is then only a partial view of the column's real
+ *   contents (see `KanbanBoard.jsx`'s `dragDisabled` derivation for the
+ *   full correctness rationale).
  */
-function KanbanColumn({ column, applications, onRename, onDelete, onCardClick, onAddApplication }) {
+function KanbanColumn({ column, applications, onRename, onDelete, onCardClick, onAddApplication, dragDisabled }) {
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState(column.name)
 
@@ -101,6 +106,7 @@ function KanbanColumn({ column, applications, onRename, onDelete, onCardClick, o
                 application={application}
                 index={index}
                 onCardClick={onCardClick}
+                dragDisabled={dragDisabled}
               />
             ))}
             {provided.placeholder}

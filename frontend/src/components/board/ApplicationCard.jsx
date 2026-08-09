@@ -22,8 +22,13 @@ const PRIORITY_BADGE_CLASSES = {
  *   by `@hello-pangea/dnd`'s `Draggable` to compute drag offsets
  * @param {Function} [props.onCardClick] called with the application on click;
  *   `KanbanBoard` wires this to open `ApplicationModal` in edit mode (Task 9)
+ * @param {boolean} [props.dragDisabled] passed straight to `Draggable`'s own
+ *   `isDragDisabled` (Task 12) — true while any board filter is active, so
+ *   the drag gesture itself never starts (rather than starting and being
+ *   corrected after the fact), preventing both the visual reorder and the
+ *   `PATCH /move` call that would otherwise follow it.
  */
-function ApplicationCard({ application, index, onCardClick }) {
+function ApplicationCard({ application, index, onCardClick, dragDisabled }) {
   const priorityColor = PRIORITY_COLORS[application.priority]
   // Signature "tracking code" chip per Task 6's design note: a stable,
   // deterministic label derived from the application's own id (rather than
@@ -32,7 +37,7 @@ function ApplicationCard({ application, index, onCardClick }) {
   const trackingCode = `APP-${application.id.slice(-6).toUpperCase()}`
 
   return (
-    <Draggable draggableId={application.id} index={index}>
+    <Draggable draggableId={application.id} index={index} isDragDisabled={dragDisabled}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
