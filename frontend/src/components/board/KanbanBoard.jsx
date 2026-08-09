@@ -40,8 +40,14 @@ import ErrorBanner from '../common/ErrorBanner'
  *   (see below) — this component is the one place that both needs the raw
  *   filters AND drives the drag-and-drop tree, so it's the natural spot for
  *   that derivation rather than duplicating it in `Board.jsx`.
+ * @param {Function} [props.onBoardChange] `() => void`, called after every
+ *   mutation that actually reaches the backend successfully (create,
+ *   update, delete, and drag-and-drop move) — lets `Board.jsx` bump its
+ *   `refreshKey` so the sibling `UpcomingFollowUps` widget (which owns its
+ *   own independent `useApplications` call, see `Board.jsx`'s top comment)
+ *   knows to refetch instead of going stale until a page reload.
  */
-function KanbanBoard({ filters }) {
+function KanbanBoard({ filters, onBoardChange }) {
   const {
     columns,
     loading: columnsLoading,
@@ -105,7 +111,36 @@ function KanbanBoard({ filters }) {
     // partial-view math (see `dragDisabled`'s comment above) never
     // executes, no matter how the drag was triggered.
     if (dragDisabled) return
-    moveApplication(result)
+    // `moveApplication` never rejects (see useApplications.js — a failed
+    // PATCH rolls the board back and sets `error` instead of throwing), so
+    // `onBoardChange` firing after it settles is safe unconditionally: on
+    // success there's a real change to refetch for, and on a rolled-back
+    // failure the "refetch" is a harmless no-op since nothing was actually
+    // persisted. `.finally` (not `.then`) keeps that true regardless.
+    moveApplication(result).finally(() => onBoardChange?.())
+  }
+
+  /**
+   * Wraps `useApplications`' create/update/delete so a successful mutation
+   * also notifies `Board.jsx` (see `onBoardChange` above) — thin pass-
+   * throughs otherwise, preserving the original reject-on-failure contract
+   * `ApplicationModal` relies on for its own try/catch.
+   */
+  async function handleCreateApplication(data) {
+    const created = await createApplication(data)
+    onBoardChange?.()
+    return created
+  }
+
+  async function handleUpdateApplication(id, data) {
+    const updated = await updateApplication(id, data)
+    onBoardChange?.()
+    return updated
+  }
+
+  async function handleDeleteApplication(id) {
+    await deleteApplication(id)
+    onBoardChange?.()
   }
 
   function applicationsForColumn(columnId) {
@@ -160,9 +195,9 @@ function KanbanBoard({ filters }) {
         application={modalState.application}
         columnId={modalState.columnId}
         onClose={closeModal}
-        onCreate={createApplication}
-        onUpdate={updateApplication}
-        onDelete={deleteApplication}
+        onCreate={handleCreateApplication}
+        onUpdate={handleUpdateApplication}
+        onDelete={handleDeleteApplication}
       />
     </div>
   )

@@ -23,6 +23,18 @@ import FilterBar from '../components/filters/FilterBar.jsx'
  * `UpcomingFollowUps` deliberately keeps its own separate, unfiltered call
  * and is untouched by this task, since it's a "what's coming up regardless
  * of the board view" widget, not a filtered board view itself.
+ *
+ * The two hooks' independence above means they also share no state, so
+ * without `refreshKey` a board mutation (create/edit/delete/drag) would
+ * update `KanbanBoard`'s own copy of `applications` but leave
+ * `UpcomingFollowUps`'s copy stale until a full page reload. `refreshKey` is
+ * the cheap fix: a plain counter, bumped via `handleBoardChange` (passed
+ * down to `KanbanBoard` as `onBoardChange`) every time a mutation succeeds,
+ * and threaded to `UpcomingFollowUps` as a prop whose only job is to be a
+ * new value each time — `UpcomingFollowUps` re-fetches whenever it changes.
+ * This intentionally does NOT thread the actual `applications` data through
+ * — just a "something changed, please refetch" signal — so neither
+ * Task 8/9's nor Task 10's internals need any deeper rework.
  */
 function Board() {
   // Single owner of the actual filter values — `FilterBar` is a controlled
@@ -30,13 +42,23 @@ function Board() {
   // `KanbanBoard` only ever receives this object to read, never to own.
   const [filters, setFilters] = useState({})
 
+  // See the top-of-file comment above for why this exists: a plain
+  // incrementing counter, not real data, so `UpcomingFollowUps` can depend
+  // on it purely to know "refetch now" without this page needing to know or
+  // care what changed.
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  function handleBoardChange() {
+    setRefreshKey((key) => key + 1)
+  }
+
   return (
     <main className="min-h-screen px-6 py-6">
       <div className="mb-4">
-        <UpcomingFollowUps />
+        <UpcomingFollowUps refreshKey={refreshKey} />
       </div>
       <FilterBar filters={filters} onChange={setFilters} />
-      <KanbanBoard filters={filters} />
+      <KanbanBoard filters={filters} onBoardChange={handleBoardChange} />
     </main>
   )
 }

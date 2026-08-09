@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useApplications } from '../../hooks/useApplications'
 import { daysUntil, formatRelativeLabel } from '../../utils/dateFormat'
 import Spinner from '../common/Spinner'
@@ -20,9 +21,33 @@ import Spinner from '../common/Spinner'
  * Deliberately does NOT surface overdue (past-due) follow-ups — the spec
  * for this widget is "next 7 days," not general follow-up tracking, so a
  * `followUpDate` in the past is simply filtered out, not highlighted.
+ *
+ * @param {object} props
+ * @param {number} [props.refreshKey] bumped by `Board.jsx` whenever a board
+ *   mutation (create/edit/delete/move) succeeds elsewhere on the page —
+ *   this hook's independent `useApplications` call (see the comment above)
+ *   otherwise has no way to know its copy of `applications` just went
+ *   stale. The value itself is meaningless; only a change in it matters.
  */
-function UpcomingFollowUps() {
-  const { applications, loading } = useApplications()
+function UpcomingFollowUps({ refreshKey }) {
+  const { applications, loading, refetch } = useApplications()
+
+  // Skips the effect's very first run: `useApplications`' own mount effect
+  // already fires the initial fetch (see that hook), so calling `refetch`
+  // again here on mount would just be a redundant second request. A ref
+  // (not a `refreshKey === 0` check) is what makes this correctly skip
+  // ONLY the first run — `refreshKey` legitimately starts at 0, so
+  // comparing against a specific initial value would break the moment
+  // `Board.jsx`'s counter wraps back to it, however unlikely.
+  const isFirstRun = useRef(true)
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false
+      return
+    }
+    refetch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey])
 
   if (loading) {
     return <Spinner label="Loading follow-ups…" />

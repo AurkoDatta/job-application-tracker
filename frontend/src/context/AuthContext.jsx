@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react'
 import * as authService from '../services/authService'
+import { onUnauthorized } from '../services/api'
 
 /**
  * Holds the authenticated user (or null) plus the initial-session-check
@@ -28,6 +29,20 @@ export const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Registers with api.js's response interceptor (see that file's "401
+  // handling" comment for why this is a registration callback rather than
+  // an import in either direction) so a 401 on any authenticated request —
+  // most commonly the 24h JWT cookie expiring while the SPA is still open —
+  // clears `user` here. That alone is enough to redirect: every protected
+  // route is wrapped in `ProtectedRoute`, which renders `<Navigate
+  // to="/login">` the moment `user` is null, so there's nothing further to
+  // do here beyond clearing state. Unregistered on unmount for symmetry,
+  // though in practice `AuthProvider` lives for the app's whole lifetime.
+  useEffect(() => {
+    onUnauthorized(() => setUser(null))
+    return () => onUnauthorized(null)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
