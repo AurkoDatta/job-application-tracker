@@ -1,6 +1,7 @@
 package com.jobtracker.service;
 
 import java.time.Instant;
+import java.util.Locale;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -147,7 +148,10 @@ public class AuthService {
      * @return the same address, lowercased
      */
     private String normalizeEmail(String email) {
-        return email.toLowerCase();
+        // Locale.ROOT avoids locale-dependent casing rules (e.g. Turkish's
+        // dotless "i") producing a different lowercase result for the same
+        // address depending on the JVM's default locale.
+        return email.toLowerCase(Locale.ROOT);
     }
 
     /** Carries both the raw JWT (for the cookie) and the public user DTO (for the JSON body) back to the controller. */
