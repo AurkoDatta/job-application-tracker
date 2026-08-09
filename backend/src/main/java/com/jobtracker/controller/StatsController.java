@@ -10,6 +10,8 @@ import com.jobtracker.dto.stats.StatsResponse;
 import com.jobtracker.security.CustomUserDetails;
 import com.jobtracker.service.StatsService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Thin REST layer for the analytics page. All computation lives in
  * {@link StatsService}'s aggregation pipelines; this controller only
@@ -20,6 +22,7 @@ import com.jobtracker.service.StatsService;
  * is enforced globally by {@code SecurityConfig} for everything under
  * {@code /api/**} except {@code /api/auth/**}.</p>
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/stats")
 public class StatsController {
@@ -33,7 +36,13 @@ public class StatsController {
     /** Returns the current user's full analytics snapshot. */
     @GetMapping
     public ResponseEntity<StatsResponse> getStats(@AuthenticationPrincipal CustomUserDetails principal) {
-        return ResponseEntity.ok(statsService.getStats(currentUserId(principal)));
+        String userId = currentUserId(principal);
+        // DEBUG, not INFO: this is a read-heavy, low-business-value endpoint
+        // (the frontend polls/re-renders analytics often) — logging every
+        // view at INFO would just be noise, unlike the business-event logs
+        // in the service layer which mark actual state mutations.
+        log.debug("Stats requested for user {}", userId);
+        return ResponseEntity.ok(statsService.getStats(userId));
     }
 
     /** Extracts the authenticated user's id from the security-context principal populated by {@code JwtAuthFilter}. */

@@ -16,3 +16,10 @@ jwt:
 
 cookie:
   secure: false   # set to true when serving the frontend over https
+
+logging:
+  level:
+    # Defaults to INFO; override via the LOGGING_LEVEL_COM_JOBTRACKER env
+    # var (Spring Boot's standard relaxed-binding convention for
+    # logging.level.* properties) to e.g. DEBUG for more verbose output.
+    com.jobtracker: INFO

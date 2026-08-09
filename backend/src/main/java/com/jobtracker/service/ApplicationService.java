@@ -20,10 +20,13 @@ import com.jobtracker.model.Priority;
 import com.jobtracker.repository.ApplicationRepository;
 import com.jobtracker.repository.ColumnRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Business logic for a user's job application cards: filtered listing,
  * creation, full edit, drag-and-drop move, and deletion.
  */
+@Slf4j
 @Service
 public class ApplicationService {
 
@@ -140,7 +143,9 @@ public class ApplicationService {
                 .updatedAt(now)
                 .build();
 
-        return toResponse(applicationRepository.save(application));
+        Application saved = applicationRepository.save(application);
+        log.info("Application created: id={}, company={}, columnId={}", saved.getId(), saved.getCompany(), saved.getColumnId());
+        return toResponse(saved);
     }
 
     /**
@@ -173,7 +178,9 @@ public class ApplicationService {
         application.setNotes(request.notes());
         application.setUpdatedAt(Instant.now());
 
-        return toResponse(applicationRepository.save(application));
+        Application saved = applicationRepository.save(application);
+        log.info("Application updated: id={}", saved.getId());
+        return toResponse(saved);
     }
 
     /**
@@ -198,6 +205,7 @@ public class ApplicationService {
         application.setOrder(request.order());
         application.setUpdatedAt(Instant.now());
         applicationRepository.save(application);
+        log.info("Application moved: id={}, newColumnId={}, newOrder={}", applicationId, request.columnId(), request.order());
     }
 
     /**
@@ -210,6 +218,7 @@ public class ApplicationService {
     public void deleteApplication(String userId, String applicationId) {
         Application application = findOwnedApplication(userId, applicationId);
         applicationRepository.delete(application);
+        log.info("Application deleted: id={}", applicationId);
     }
 
     /**

@@ -11,11 +11,14 @@ import com.jobtracker.exception.ResourceNotFoundException;
 import com.jobtracker.model.Column;
 import com.jobtracker.repository.ColumnRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Business logic for a user's Kanban columns: listing, creation,
  * rename/reorder, deletion, and the default-column seeding that runs once
  * at registration time.
  */
+@Slf4j
 @Service
 public class ColumnService {
 
@@ -60,7 +63,9 @@ public class ColumnService {
                 .name(request.name())
                 .order(order)
                 .build();
-        return toResponse(columnRepository.save(column));
+        Column saved = columnRepository.save(column);
+        log.info("Column created: name={}, userId={}", saved.getName(), userId);
+        return toResponse(saved);
     }
 
     /**
@@ -78,7 +83,9 @@ public class ColumnService {
         if (request.order() != null) {
             column.setOrder(request.order());
         }
-        return toResponse(columnRepository.save(column));
+        Column saved = columnRepository.save(column);
+        log.info("Column renamed: id={}, newName={}", saved.getId(), saved.getName());
+        return toResponse(saved);
     }
 
     /**
@@ -91,6 +98,7 @@ public class ColumnService {
     public void deleteColumn(String userId, String columnId) {
         Column column = findOwnedColumn(userId, columnId);
         columnRepository.delete(column);
+        log.info("Column deleted: id={}", columnId);
     }
 
     /**

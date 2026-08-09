@@ -15,6 +15,8 @@ import com.jobtracker.model.User;
 import com.jobtracker.repository.UserRepository;
 import com.jobtracker.security.JwtUtil;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Business logic for registration and login.
  *
@@ -23,6 +25,7 @@ import com.jobtracker.security.JwtUtil;
  * response as an httpOnly cookie while keeping the JSON body limited to
  * user-facing fields.</p>
  */
+@Slf4j
 @Service
 public class AuthService {
 
@@ -82,6 +85,9 @@ public class AuthService {
         columnService.seedDefaultColumns(saved.getId());
 
         String token = jwtUtil.generate(saved.getEmail());
+        // Business-event audit trail — email is a stored, already-returned
+        // field (not a secret); never log the password or the token value.
+        log.info("User registered: {}", saved.getEmail());
         return new AuthResult(token, toAuthResponse(saved));
     }
 
@@ -102,6 +108,7 @@ public class AuthService {
         }
 
         String token = jwtUtil.generate(user.getEmail());
+        log.info("User logged in: {}", user.getEmail());
         return new AuthResult(token, toAuthResponse(user));
     }
 

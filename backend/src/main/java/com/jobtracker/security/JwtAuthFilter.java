@@ -2,8 +2,6 @@ package com.jobtracker.security;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +14,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Authenticates each request by reading the JWT from the {@code token}
@@ -27,11 +26,11 @@ import jakarta.servlet.http.HttpServletResponse;
  * theft compared to storing it in localStorage and sending it via an
  * Authorization header.</p>
  */
+@Slf4j
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String COOKIE_NAME = "token";
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;

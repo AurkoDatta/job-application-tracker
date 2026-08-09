@@ -20,3 +20,13 @@ jwt:
 
 cookie:
   secure: ${COOKIE_SECURE:false}   # false for local http dev; must be true in any real deployment over https
+
+logging:
+  level:
+    # Default INFO for normal operation (business-event logs from the
+    # service layer + WARN/ERROR from GlobalExceptionHandler). Override per
+    # environment via the LOGGING_LEVEL_COM_JOBTRACKER env var (Spring
+    # Boot's standard relaxed-binding convention for logging.level.* —
+    # e.g. LOGGING_LEVEL_COM_JOBTRACKER=DEBUG to also see JwtAuthFilter's
+    # stale-token debug line and StatsController's per-request debug line).
+    com.jobtracker: ${LOGGING_LEVEL_COM_JOBTRACKER:INFO}
